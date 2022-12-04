@@ -1,8 +1,7 @@
 package puzzles
 
-import cats.effect.IO
-
-import scala.io.Source
+import java.io.{BufferedWriter, FileWriter}
+import scala.io.{Source}
 
 /** --- Day 1: Calorie Counting ---
   *  Santa's reindeer typically eat regular reindeer food, but they need a lot of magical energy to deliver presents on Christmas. For that, their favorite snack is a special type of star fruit that only grows deep in the jungle. The Elves have brought you on their annual expedition to the grove where the fruit grows.
@@ -54,6 +53,7 @@ import scala.io.Source
 trait Day01 {
 
   def snackData: List[List[Int]]
+  val fileSource: String
 
 }
 
@@ -62,10 +62,52 @@ final case class Elf(inv: List[Snack]) {
   def caloriesCarried: Int = inv.map(_.value).sum
 }
 
+// TODO Really what I need is a encoder/decoder...
 object Day01Interpreter extends Day01 {
+
+  override val fileSource: String = "src/main/scala/inputs/day01"
+
+  def decode(file: String): List[Elf] = {
+    val s = Source
+      .fromFile(file)
+    val snackData = s
+      .getLines()
+      .map(_.toIntOption)
+      // must have missed a HOF here...
+      .foldLeft(List(List.empty[Int])) { (s, v) =>
+        v match {
+          case Some(value) => (value :: s.head) :: s.tail
+          case None        => List.empty[Int] :: s
+        }
+      }
+    s.close()
+    for {
+      intList <- snackData
+      snacks = intList.map(Snack)
+      elf    = Elf(snacks)
+    } yield elf
+  }
+
+  def encode(elves: List[Elf]): String = {
+    val strings: List[String] = for {
+      elf <- elves.reverse
+      inv       = elf.inv.reverse.map(_.value)
+      invString = inv.mkString("\n")
+    } yield invString
+
+    strings.mkString("\n\n")
+  }
+
+  def writeFile(filename: String, s: String): Unit = {
+    val bw = new BufferedWriter(new FileWriter(filename))
+    for (line <- s)
+      bw.write(line)
+    bw.close()
+  }
+
   override def snackData: List[List[Int]] = {
     val source = Source
-      .fromFile("src/main/scala/inputs/day01")
+      .fromFile(fileSource)
 
     val res = source
       .getLines()
@@ -80,34 +122,33 @@ object Day01Interpreter extends Day01 {
     source.close()
     res
   }
-}
-object Day01 {
 
-  // TODO I don't know which is more idiomatic
-  val allElvesSnackStatus: List[Int] = for {
-    elf <- Day01Interpreter.snackData.map(_.map(Snack(_))).map(Elf(_))
-  } yield elf.caloriesCarried
+}
+
+object Day01 {
 
   val allElvesInvSize: List[Int] = for {
     elf <- Day01Interpreter.snackData.map(_.map(Snack(_))).map(Elf(_))
   } yield elf.inv.length
 
-  val allElvesSnackStatus2: List[Int] = for {
-    intList <- Day01Interpreter.snackData
+  def allElvesSnackStatus(snackData: List[List[Int]]): List[Int] = for {
+    intList <- snackData
     snacks = intList.map(Snack)
     elf    = Elf(snacks)
   } yield elf.caloriesCarried
 
-  def elfWithMostSnacks =
-    allElvesSnackStatus2.max
+  def elfWithMostSnacks(snackData: List[List[Int]]) =
+    allElvesSnackStatus(snackData).max
 
-  val top3ElvesByCalories = allElvesSnackStatus.sorted.takeRight(3)
+  def top3ElvesByCalories(snackData: List[List[Int]]) =
+    allElvesSnackStatus(snackData).sorted.takeRight(3)
 
   def main(args: Array[String]): Unit = {
-    println(allElvesSnackStatus2.size)
-    println(allElvesSnackStatus2.max)
-    println(top3ElvesByCalories.sum)
+    println(allElvesSnackStatus(Day01Interpreter.snackData).size)
+    println(allElvesSnackStatus(Day01Interpreter.snackData).max)
+    println(top3ElvesByCalories(Day01Interpreter.snackData).sum)
     println(allElvesInvSize.min)
+
   }
 
 }
