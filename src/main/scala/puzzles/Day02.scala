@@ -196,12 +196,13 @@ object Day02 {
           )
       }
     }
-
+// Part 1
   val myScores: Seq[Int] = for {
     (oppMove, myMove, _) <- allGameMoves
     result = MyGameResult.evaluate((oppMove, myMove))
   } yield MyGameResult.scoreGame(myMove, result)
 
+  // Part 2
   val myRiggedScores: Seq[Int] = for {
     (oppMove, _, result) <- allGameMoves
   } yield MyGameResult.scoreFixedGame(oppMove, result)

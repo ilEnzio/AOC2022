@@ -64,9 +64,9 @@ import scala.io.Source
 trait Day03 {}
 
 case class RuckSack(comp1: String, comp2: String) {
-  def commonItemDistinct = comp1.filter(comp2.contains(_)).distinct
-  def commonItem         = comp1.filter(comp2.contains(_))
-  def combinedSack       = comp1 ++ comp2
+  def commonItemDistinct: String = comp1.filter(comp2.contains(_)).distinct
+  def commonItem: String         = comp1.filter(comp2.contains(_))
+  def combinedSack: String       = comp1 ++ comp2
 }
 
 object Day03 {
@@ -80,12 +80,12 @@ object Day03 {
       RuckSack(sack._1, sack._2)
     }
 
-  val elfGroups: List[List[String]] =
+  val allCommonItems: List[Char] = allRuckSacks.map(_.commonItemDistinct(0))
+
+  val allElfGroups: List[List[String]] =
     allRuckSacks.map(_.combinedSack).grouped(3).toList
 
-  val commonItems: List[Char] = allRuckSacks.map(_.commonItemDistinct(0))
-
-  def groupCommonItems(group: List[String]) =
+  def elfGroupCommonItems(group: List[String]) =
     group(0).filter(x => group(1).contains(x) && group(2).contains(x)).distinct
 
   def charToInt(char: Char) =
@@ -94,15 +94,15 @@ object Day03 {
       case false => char.toInt - 96
     }
 
-  val elfGroupItems = elfGroups.map(groupCommonItems(_)(0))
+  val elfGroupItems = allElfGroups.map(elfGroupCommonItems(_)(0))
 
   def main(args: Array[String]): Unit = {
 //    println(allRuckSacks)
-    println(commonItems)
-    println(commonItems.map(charToInt(_)).sum) // 96, 4
+    println(allCommonItems)
+    println(allCommonItems.map(charToInt(_)).sum) // 96, 4
 
-    println(elfGroups)
-    println(elfGroups.map(groupCommonItems(_)))
+    println(allElfGroups)
+    println(allElfGroups.map(elfGroupCommonItems(_)))
     println(elfGroupItems.map(charToInt(_)).sum)
 
   }
