@@ -10,7 +10,7 @@ Test / testOptions +=
     "-verbosity",
     "1",
     "-minSuccessfulTests",
-    "10000"
+    "1000"
   )
 libraryDependencies ++= Seq(
   "org.scalactic"     %% "scalactic"       % "3.2.13",

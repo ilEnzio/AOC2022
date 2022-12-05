@@ -2,7 +2,7 @@ package day01_Data
 
 import org.scalacheck.Gen
 import org.scalacheck.Gen.{choose, listOf, listOfN}
-import puzzles.{Elf, Snack}
+import puzzles.day01.{Elf, Snack}
 
 object Day01Generators {
 
