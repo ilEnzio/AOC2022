@@ -1,8 +1,14 @@
 package puzzles.day01
 
+import java.io.{BufferedWriter, FileWriter}
 import scala.io.Source
 
-object IOService extends Day01 {
+// TODO soo... this code is not RF... it bunch of side effects
+// TODO also if I put all the IOServices in one file I can flatten
+// the puzzle package.  But the IOService will become massive and there will be conflicts
+// if collaborators were working on different Days.
+
+object IOService extends CalorieCounting {
 
   override val fileSource: String = "src/main/scala/inputs/day01"
 
@@ -48,5 +54,12 @@ object IOService extends Day01 {
 
   def decode[A](file: String)(implicit codec: Day01Codec[A]): A =
     codec.decode(file)
+
+  def writeFile(filename: String, s: String): Unit = {
+    val bw = new BufferedWriter(new FileWriter(filename))
+    for (line <- s)
+      bw.write(line)
+    bw.close()
+  }
 
 }

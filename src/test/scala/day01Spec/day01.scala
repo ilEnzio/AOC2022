@@ -1,17 +1,20 @@
 package day01Spec
 
+import scala.io.Source
+
 import day01_Data.Day01Generators.genElfGroup
 import org.scalacheck.Prop.{forAll, AnyOperators}
 import org.scalacheck.Properties
+
 import puzzles.day01.Day01Codec
-import puzzles.day01.{Day01, Elf, Snack}
+import puzzles.day01.{CalorieCounting, Elf, Snack}
 
-import scala.io.Source
-import puzzles.day01.Day01.{elfWithMostSnacks, writeFile}
+import puzzles.day01.CalorieCounting.elfWithMostSnacks
+import puzzles.day01.IOService.writeFile
 
-object day01Test extends Properties("Day 1 Tests") {
+object CalorieCountingSpec extends Properties("CalorieCounting Tests") {
 
-  object Day01_TestIOService extends Day01 {
+  object Day01_TestIOService extends CalorieCounting {
 
     override val fileSource: String = "src/main/scala/inputs/day01_encTest"
 
@@ -57,8 +60,9 @@ object day01Test extends Properties("Day 1 Tests") {
   property(
     "the maximum calorie count is the number of elves times max snack value"
   ) = forAll(genElfGroup) { allElves =>
-    val allElvesSnackStatus: Seq[Int] = Day01.allElvesSnackStatus(allElves)
-    val numElves                      = allElvesSnackStatus.size
+    val allElvesSnackStatus: Seq[Int] =
+      CalorieCounting.allElvesSnackStatus(allElves)
+    val numElves = allElvesSnackStatus.size
     allElvesSnackStatus.sum < numElves * 15 * 99999
   }
 
