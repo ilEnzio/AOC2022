@@ -124,12 +124,7 @@ object MyGameResult {
           case Paper   => Rock
           case Scissor => Paper
         }
-      case _: Draw =>
-        oppMove match {
-          case Rock    => Rock
-          case Paper   => Paper
-          case Scissor => Scissor
-        }
+      case _: Draw => oppMove
     }
     result.points + myMove.value
   }
@@ -169,12 +164,7 @@ object MyGameResult {
 
   object Draw {
     def unapply(game: (Move, Move)): Option[Draw] =
-      game match {
-        case (Rock, Rock)       => Some(Draw())
-        case (Paper, Paper)     => Some(Draw())
-        case (Scissor, Scissor) => Some(Draw())
-        case (_, _)             => None
-      }
+      if (game._1 == game._2) Some(Draw()) else None
   }
 }
 
@@ -196,6 +186,7 @@ object Day02 {
           )
       }
     }
+
 // Part 1
   val myScores: Seq[Int] = for {
     (oppMove, myMove, _) <- allGameMoves

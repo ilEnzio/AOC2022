@@ -1,7 +1,6 @@
-package puzzles
+package puzzles.day01
 
-import cats.effect.IO
-
+import java.io.{BufferedWriter, FileWriter}
 import scala.io.Source
 
 /** --- Day 1: Calorie Counting ---
@@ -52,62 +51,50 @@ import scala.io.Source
   * Find the top three Elves carrying the most Calories. How many Calories are those Elves carrying in total?
   */
 trait Day01 {
-
-  def snackData: List[List[Int]]
-
+  val fileSource: String
 }
 
 final case class Snack(value: Int)
 final case class Elf(inv: List[Snack]) {
+  // TODO I think I can conduct this in parallel?
   def caloriesCarried: Int = inv.map(_.value).sum
 }
 
-object Day01Interpreter extends Day01 {
-  override def snackData: List[List[Int]] = {
-    val source = Source
-      .fromFile("src/main/scala/inputs/day01")
-
-    val res = source
-      .getLines()
-      .map(_.toIntOption)
-      // must have missed a HOF here...
-      .foldLeft(List(List.empty[Int])) { (s, v) =>
-        v match {
-          case Some(value) => (value :: s.head) :: s.tail
-          case None        => List.empty[Int] :: s
-        }
-      }
-    source.close()
-    res
-  }
+trait Day01Codec[A] {
+  def encode(ag: A): String
+  def decode(file: String): A
 }
+
 object Day01 {
+  import IOService._
 
-  // TODO I don't know which is more idiomatic
-  val allElvesSnackStatus: List[Int] = for {
-    elf <- Day01Interpreter.snackData.map(_.map(Snack(_))).map(Elf(_))
-  } yield elf.caloriesCarried
+  def allElves: List[Elf] =
+    IOService.decode(fileSource)
 
-  val allElvesInvSize: List[Int] = for {
-    elf <- Day01Interpreter.snackData.map(_.map(Snack(_))).map(Elf(_))
-  } yield elf.inv.length
+  def allElvesInvSize(allElves: List[Elf]): List[Int] =
+    allElves.map(_.inv.length)
 
-  val allElvesSnackStatus2: List[Int] = for {
-    intList <- Day01Interpreter.snackData
-    snacks = intList.map(Snack)
-    elf    = Elf(snacks)
-  } yield elf.caloriesCarried
+  def writeFile(filename: String, s: String): Unit = {
+    val bw = new BufferedWriter(new FileWriter(filename))
+    for (line <- s)
+      bw.write(line)
+    bw.close()
+  }
 
-  def elfWithMostSnacks =
-    allElvesSnackStatus2.max
+  def allElvesSnackStatus(elves: List[Elf]): List[Int] =
+    elves.map(_.caloriesCarried)
 
-  val top3ElvesByCalories = allElvesSnackStatus.sorted.takeRight(3)
+  def elfWithMostSnacks(elves: List[Elf]) =
+    elves.map(_.caloriesCarried).max
+
+  def top3ElvesByCalories(elves: List[Elf]) =
+    allElvesSnackStatus(elves).sorted.takeRight(3)
 
   def main(args: Array[String]): Unit = {
-    println(allElvesSnackStatus2.size)
-    println(allElvesSnackStatus2.max)
-    println(top3ElvesByCalories.sum)
-    println(allElvesInvSize.min)
+    println(allElves.size)
+    println(elfWithMostSnacks(allElves))
+    println(top3ElvesByCalories(allElves).sum)
+    println(allElvesInvSize(allElves).min)
   }
 
 }

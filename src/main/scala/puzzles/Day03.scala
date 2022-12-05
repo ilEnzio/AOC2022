@@ -97,7 +97,6 @@ object Day03 {
   val elfGroupItems = allElfGroups.map(elfGroupCommonItems(_)(0))
 
   def main(args: Array[String]): Unit = {
-//    println(allRuckSacks)
     println(allCommonItems)
     println(allCommonItems.map(charToInt(_)).sum) // 96, 4
 
