@@ -97,9 +97,9 @@ object SupplyOps {
 
     val (from, to) =
       doPop(op.num, supplies(op.fromKey), supplies(op.toKey))
-    val fromU = supplies.updated(op.fromKey, from)
-    val toU   = fromU.updated(op.toKey, to)
-    toU
+    val withUpdatedFromStack      = supplies.updated(op.fromKey, from)
+    val withUpdateFromAndToStacks = withUpdatedFromStack.updated(op.toKey, to)
+    withUpdateFromAndToStacks
   }
 
   def topCrates(supplies: Map[String, Stack]): List[Option[String]] =
