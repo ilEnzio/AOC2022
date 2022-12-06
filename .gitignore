@@ -1,0 +1,22 @@
+*.class
+*.log
+## scala specific files to ignore
+*.class
+target/
+project/project/
+_site/
+.bsp/
+
+## Mac
+.DS_Store
+
+
+## IntelliJ files to ignore
+*.iml
+*.iws
+*.ipr
+.idea
+.idea/*
+
+## test files
+src/main/scala/inputs/day01_encTest

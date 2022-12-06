@@ -1,8 +1,5 @@
 package puzzles.day01
 
-import java.io.{BufferedWriter, FileWriter}
-import scala.io.Source
-
 /** --- Day 1: Calorie Counting ---
   *  Santa's reindeer typically eat regular reindeer food, but they need a lot of magical energy to deliver presents on Christmas. For that, their favorite snack is a special type of star fruit that only grows deep in the jungle. The Elves have brought you on their annual expedition to the grove where the fruit grows.
   *
@@ -50,7 +47,7 @@ import scala.io.Source
   *
   * Find the top three Elves carrying the most Calories. How many Calories are those Elves carrying in total?
   */
-trait Day01 {
+trait CalorieCounting {
   val fileSource: String
 }
 
@@ -65,7 +62,7 @@ trait Day01Codec[A] {
   def decode(file: String): A
 }
 
-object Day01 {
+object CalorieCounting {
   import IOService._
 
   def allElves: List[Elf] =
@@ -73,13 +70,6 @@ object Day01 {
 
   def allElvesInvSize(allElves: List[Elf]): List[Int] =
     allElves.map(_.inv.length)
-
-  def writeFile(filename: String, s: String): Unit = {
-    val bw = new BufferedWriter(new FileWriter(filename))
-    for (line <- s)
-      bw.write(line)
-    bw.close()
-  }
 
   def allElvesSnackStatus(elves: List[Elf]): List[Int] =
     elves.map(_.caloriesCarried)
