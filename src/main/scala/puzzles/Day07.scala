@@ -1,5 +1,14 @@
 package puzzles
 
+import cats.effect.IO
+import cats.effect.{IO, IOApp}
+import cats.effect.std.Console
+import cats.effect.unsafe.implicits.global
+import fs2.{text, Stream}
+import fs2.io.file.{Files, Path}
+
+import scala.io.Source
+
 /** --- Day 7: No Space Left On Device ---
   * You can hear birds chirping and raindrops hitting leaves as the expedition proceeds. Occasionally, you can even hear much louder sounds in the distance; how big do the animals get out here, anyway?
   *
@@ -76,3 +85,86 @@ package puzzles
   * Find all of the directories with a total size of at most 100000. What is the sum of the total sizes of those directories?
   */
 trait Day07 {}
+
+sealed trait Line {}
+case class CD(name: String)              extends Line
+case class Dir(name: String)             extends Line
+case class File(size: Int, name: String) extends Line
+case object LS                           extends Line
+
+object Day07 {
+
+  val file = "src/main/scala/inputs/day07b"
+//  val file = "src/main/scala/inputs/day07"
+
+  def parseCommands(line: String): Line = line.split(" ") match {
+    // TODO why Array and not List? or Seq?
+    case Array("$", "cd", name) => CD(name)
+    case Array("dir", name)     => Dir(name)
+    case Array("$", "ls")       => LS // this ordering seems fragile
+    case Array(size, name)      => File(size.toInt, name)
+  }
+//
+//  def buildAdjacencyList: IO[Vector[(Map[String, List[String]], String)]] =
+//    Files[IO]
+//      .readUtf8Lines(Path(file))
+//      .filter(_.nonEmpty)
+//      .map(parseCommands)
+//      .scan((Map.empty[String, List[String]], "")) { (s, v) =>
+//        v match {
+//          case CD(name)  => (s._1.updated(name, Nil), name)
+//          case Dir(name) => (s._1.updated(s._2, name :: s._1(s._2)), s._2)
+//          case _         => s
+//        }
+//      }
+////      .foreach(Console[IO].println(_))
+//      .compile
+//      .toVector
+//
+//  def adjList_ = for {
+//    (k, v) <- buildAdjacencyList.unsafeRunSync().last._1
+//
+//  } yield (k, x :: v)
+//
+//  def dirSums: IO[Vector[(Map[String, Int], String)]] =
+//    Files[IO]
+//      .readUtf8Lines(Path(file))
+//      .filter(_.nonEmpty)
+//      .map(parseCommands)
+//      .scan((Map.empty[String, Int], "")) { (s, v) =>
+//        v match {
+//          case CD(name)      => (s._1.updated(name, 0), name)
+//          case File(size, _) => (s._1.updated(s._2, s._1(s._2) + size), s._2)
+//          case _             => s
+//        }
+//      }
+////      .foreach(Console[IO].println(_))
+//      .compile
+//      .toVector
+//
+//  def dirTotals(
+//    aj: Map[String, List[String]],
+//    totalMap: Map[String, Int]
+//  ): Map[String, Int] =
+//    for {
+//      (k, l) <- aj
+//      totals = totalMap(k) :: l.map(totalMap(_))
+//    } yield (k, totals.sum)
+//
+//  def finalSum(m: Map[String, Int]): Int =
+//    m.values.filter(_ < 100000).toList.sum
+
+  def main(args: Array[String]): Unit = {
+
+//    val adjList = buildAdjacencyList.unsafeRunSync().last._1
+//    println(adjList)
+//    val sums = dirSums.unsafeRunSync().last._1
+//    println(sums)
+//    val resultDirs = dirTotals(adjList, sums)
+//    println(finalSum(resultDirs))
+//
+//    println(adjList_)
+
+  }
+
+}

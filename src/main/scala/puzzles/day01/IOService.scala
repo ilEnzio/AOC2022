@@ -1,5 +1,10 @@
 package puzzles.day01
 
+import cats.effect.{ExitCode, IO, IOApp}
+import cats.effect.unsafe.implicits.global
+import fs2.io.file.{Files, Path}
+import fs2.{Pipe, Stream}
+
 import java.io.{BufferedWriter, FileWriter}
 import scala.io.Source
 
@@ -48,6 +53,58 @@ object IOService extends CalorieCounting {
       } yield elf
     }
   }
+
+  def inputStream: Stream[IO, String] =
+    Files[IO]
+      .readUtf8Lines(Path(fileSource))
+
+  def decoderToElf(stream: Stream[IO, String]): Stream[IO, Elf] = {
+    val elfData = for {
+      snackD <- stream
+        .fold(List(List.empty[Int])) { (s, v) =>
+          v.toIntOption match {
+            case Some(value) => (value :: s.head) :: s.tail
+            case None        => List.empty[Int] :: s
+          }
+        }
+        .map(sn => sn.map(snacks => Elf(snacks.map(Snack(_)))))
+      elves <- Stream.emits(snackD.reverse)
+    } yield elves
+    elfData
+  }
+
+  // pipe = Stream[F, I] => Stream[F, O]
+  val stringToElfPipe: Pipe[IO, String, Elf] = inStream =>
+    for {
+      snackD <- inStream
+        .fold(List(List.empty[Int])) { (s, v) =>
+          v.toIntOption match {
+            case Some(value) => (value :: s.head) :: s.tail
+            case None        => List.empty[Int] :: s
+          }
+        }
+        .map(sn => sn.map(snacks => Elf(snacks.map(Snack(_)))))
+      elves <- Stream.emits(snackD.reverse)
+    } yield elves
+
+  val mostSnacksPipe: Pipe[IO, Elf, Elf] = inStream =>
+    inStream
+      .fold(Elf(Nil)) { (s: Elf, v: Elf) =>
+        if (v.caloriesCarried > s.caloriesCarried) v else s
+      }
+      .map(x => Elf(List(Snack(x.caloriesCarried))))
+
+  val top3CaloriesPipe: Pipe[IO, Elf, List[Elf]] = inStream =>
+    inStream.fold(List.empty[Elf]) { (s, v) =>
+      val sorted = s.sortBy(_.caloriesCarried)
+      sorted.length < 3 match {
+        case true => v :: s
+        case _    => (v :: s).sortBy(_.caloriesCarried).drop(1)
+      }
+    }
+
+  val toConsole: Pipe[IO, Elf, Unit] = inStream =>
+    inStream.evalMap(x => IO(println(x.copy(inv = x.inv.reverse))))
 
   def encode[A](elves: A)(implicit codec: Day01Codec[A]): String =
     codec.encode(elves)
