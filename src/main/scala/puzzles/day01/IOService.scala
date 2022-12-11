@@ -1,7 +1,6 @@
 package puzzles.day01
 
-import cats.Functor
-
+import cats.{Applicative}
 import fs2.io.file.{Files, Path}
 import fs2.{Pipe, Stream}
 
@@ -102,7 +101,7 @@ object IOService extends CalorieCounting {
 //  val toConsole: Pipe[IO, Elf, Unit] = inStream =>
 //    inStream.evalMap(x => IO(println(x.copy(inv = x.inv.reverse))))
 
-  def toConsolePipe[F[_]: Functor]: Pipe[F, Elf, Unit] = inStream =>
+  def toConsolePipe[F[_]: Applicative]: Pipe[F, Elf, Unit] = inStream =>
     for {
       _ <- inStream.map(x => println(x.copy(inv = x.inv.reverse)))
     } yield ()

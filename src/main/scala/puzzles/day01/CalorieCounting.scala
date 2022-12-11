@@ -1,11 +1,10 @@
 package puzzles.day01
 
-import cats.Functor
+import cats.{Applicative}
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-
-import fs2.io.file.{Files}
-import fs2.{Stream}
+import fs2.io.file.Files
+import fs2.Stream
 
 /** --- Day 1: Calorie Counting ---
   *  Santa's reindeer typically eat regular reindeer food, but they need a lot of magical energy to deliver presents on Christmas. For that, their favorite snack is a special type of star fruit that only grows deep in the jungle. The Elves have brought you on their annual expedition to the grove where the fruit grows.
@@ -90,10 +89,10 @@ object CalorieCounting {
   def allElvesFS2[F[_]: Files]: Stream[F, Elf] =
     inputStream.through(stringToElfPipe)
 
-  def streamPrintedFS2[F[_]: Files: Functor]: Stream[F, Unit] =
+  def streamPrintedFS2[F[_]: Files: Applicative]: Stream[F, Unit] =
     allElvesFS2.through(toConsolePipe)
 
-  def elfWithMostSnacksFS2[F[_]: Files: Functor]: Stream[F, Unit] =
+  def elfWithMostSnacksFS2[F[_]: Files: Applicative]: Stream[F, Unit] =
     allElvesFS2
       .through(mostSnacksPipe)
       .through(toConsolePipe)
@@ -118,6 +117,6 @@ object CalorieCounting {
     program.unsafeRunSync()
 
     //    println(allElvesInvSize(allElves).min)
-    //    streamPrinted.compile.drain.unsafeRunSync()
+//    streamPrintedFS2[IO].compile.drain.unsafeRunSync()
   }
 }
