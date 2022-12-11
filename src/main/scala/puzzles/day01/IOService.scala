@@ -1,17 +1,12 @@
 package puzzles.day01
 
-import cats.effect.{ExitCode, IO, IOApp}
-import cats.effect.unsafe.implicits.global
+import cats.Functor
+
 import fs2.io.file.{Files, Path}
 import fs2.{Pipe, Stream}
 
 import java.io.{BufferedWriter, FileWriter}
 import scala.io.Source
-
-// TODO soo... this code is not RF... it bunch of side effects
-// TODO also if I put all the IOServices in one file I can flatten
-// the puzzle package.  But the IOService will become massive and there will be conflicts
-// if collaborators were working on different Days.
 
 object IOService extends CalorieCounting {
 
@@ -53,59 +48,6 @@ object IOService extends CalorieCounting {
       } yield elf
     }
   }
-
-  def inputStream: Stream[IO, String] =
-    Files[IO]
-      .readUtf8Lines(Path(fileSource))
-
-  def decoderToElf(stream: Stream[IO, String]): Stream[IO, Elf] = {
-    val elfData = for {
-      snackD <- stream
-        .fold(List(List.empty[Int])) { (s, v) =>
-          v.toIntOption match {
-            case Some(value) => (value :: s.head) :: s.tail
-            case None        => List.empty[Int] :: s
-          }
-        }
-        .map(sn => sn.map(snacks => Elf(snacks.map(Snack(_)))))
-      elves <- Stream.emits(snackD.reverse)
-    } yield elves
-    elfData
-  }
-
-  // pipe = Stream[F, I] => Stream[F, O]
-  val stringToElfPipe: Pipe[IO, String, Elf] = inStream =>
-    for {
-      snackD <- inStream
-        .fold(List(List.empty[Int])) { (s, v) =>
-          v.toIntOption match {
-            case Some(value) => (value :: s.head) :: s.tail
-            case None        => List.empty[Int] :: s
-          }
-        }
-        .map(sn => sn.map(snacks => Elf(snacks.map(Snack(_)))))
-      elves <- Stream.emits(snackD.reverse)
-    } yield elves
-
-  val mostSnacksPipe: Pipe[IO, Elf, Elf] = inStream =>
-    inStream
-      .fold(Elf(Nil)) { (s: Elf, v: Elf) =>
-        if (v.caloriesCarried > s.caloriesCarried) v else s
-      }
-      .map(x => Elf(List(Snack(x.caloriesCarried))))
-
-  val top3CaloriesPipe: Pipe[IO, Elf, List[Elf]] = inStream =>
-    inStream.fold(List.empty[Elf]) { (s, v) =>
-      val sorted = s.sortBy(_.caloriesCarried)
-      sorted.length < 3 match {
-        case true => v :: s
-        case _    => (v :: s).sortBy(_.caloriesCarried).drop(1)
-      }
-    }
-
-  val toConsole: Pipe[IO, Elf, Unit] = inStream =>
-    inStream.evalMap(x => IO(println(x.copy(inv = x.inv.reverse))))
-
   def encode[A](elves: A)(implicit codec: Day01Codec[A]): String =
     codec.encode(elves)
 
@@ -118,5 +60,51 @@ object IOService extends CalorieCounting {
       bw.write(line)
     bw.close()
   }
+
+  /** FS2 version / Finally Tagless version
+    */
+  def inputStream[F[_]: Files]: Stream[F, String] =
+    Files[F]
+      .readUtf8Lines(Path(fileSource))
+
+  // pipe = Stream[F, I] => Stream[F, O]
+  def stringToElfPipe[F[_]]: Pipe[F, String, Elf] = inStream =>
+    for {
+      snackD <- inStream
+        .fold(List(List.empty[Int])) { (s, v) =>
+          v.toIntOption match {
+            case Some(value) => (value :: s.head) :: s.tail
+            case None        => List.empty[Int] :: s
+          }
+        }
+        .map(sn => sn.map(snacks => Elf(snacks.map(Snack(_)))))
+      // TODO This emits... seems not right???
+      elves <- Stream.emits(snackD.reverse)
+    } yield elves
+
+  def mostSnacksPipe[F[_]]: Pipe[F, Elf, Elf] = inStream =>
+    inStream
+      .fold(Elf(Nil)) { (s: Elf, v: Elf) =>
+        if (v.caloriesCarried > s.caloriesCarried) v else s
+      }
+      .map(x => Elf(List(Snack(x.caloriesCarried))))
+
+  def top3CaloriesPipe[F[_]]: Pipe[F, Elf, List[Elf]] = inStream =>
+    inStream.fold(List.empty[Elf]) { (s, v) =>
+      val sorted = s.sortBy(_.caloriesCarried)
+      sorted.length < 3 match {
+        case true => v :: s
+        case _    => (v :: s).sortBy(_.caloriesCarried).drop(1)
+      }
+    }
+
+// TODO can this also be finally tagless?
+//  val toConsole: Pipe[IO, Elf, Unit] = inStream =>
+//    inStream.evalMap(x => IO(println(x.copy(inv = x.inv.reverse))))
+
+  def toConsolePipe[F[_]: Functor]: Pipe[F, Elf, Unit] = inStream =>
+    for {
+      _ <- inStream.map(x => println(x.copy(inv = x.inv.reverse)))
+    } yield ()
 
 }

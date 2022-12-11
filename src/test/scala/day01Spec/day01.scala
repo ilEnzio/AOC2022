@@ -1,15 +1,13 @@
 package day01Spec
 
 import scala.io.Source
-
 import day01_Data.Day01Generators.genElfGroup
 import org.scalacheck.Prop.{forAll, AnyOperators}
 import org.scalacheck.Properties
-
 import puzzles.day01.Day01Codec
 import puzzles.day01.{CalorieCounting, Elf, Snack}
-
 import puzzles.day01.CalorieCounting.elfWithMostSnacks
+import puzzles.day01.IOService.ElfCodec.{decode, encode}
 import puzzles.day01.IOService.writeFile
 
 object CalorieCountingSpec extends Properties("CalorieCounting Tests") {
@@ -17,44 +15,6 @@ object CalorieCountingSpec extends Properties("CalorieCounting Tests") {
   object Day01_TestIOService extends CalorieCounting {
 
     override val fileSource: String = "src/main/scala/inputs/day01_encTest"
-
-    implicit object ElfCodec extends Day01Codec[List[Elf]] {
-      override def encode(ag: List[Elf]): String = {
-        val strings: List[String] = for {
-          elf <- ag.reverse
-          inv       = elf.inv.reverse.map(_.value)
-          invString = inv.mkString("\n")
-        } yield invString
-
-        strings.mkString("\n\n")
-      }
-
-      override def decode(file: String): List[Elf] = {
-        val s = Source
-          .fromFile(file)
-        val snackData = s
-          .getLines()
-          .map(_.toIntOption)
-          // must have missed a HOF here...
-          .foldLeft(List(List.empty[Int])) { (s, v) =>
-            v match {
-              case Some(value) => (value :: s.head) :: s.tail
-              case None        => List.empty[Int] :: s
-            }
-          }
-        s.close()
-        for {
-          intList <- snackData
-          snacks = intList.map(Snack)
-          elf    = Elf(snacks)
-        } yield elf
-      }
-    }
-    def encode[A](elves: A)(implicit codec: Day01Codec[A]): String =
-      codec.encode(elves)
-
-    def decode[A](file: String)(implicit codec: Day01Codec[A]): A =
-      codec.decode(file)
   }
 
   property(
