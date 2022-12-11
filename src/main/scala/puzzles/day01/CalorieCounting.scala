@@ -1,8 +1,11 @@
 package puzzles.day01
 
+import cats.Functor
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import fs2.Stream
+
+import fs2.io.file.{Files}
+import fs2.{Stream}
 
 /** --- Day 1: Calorie Counting ---
   *  Santa's reindeer typically eat regular reindeer food, but they need a lot of magical energy to deliver presents on Christmas. For that, their favorite snack is a special type of star fruit that only grows deep in the jungle. The Elves have brought you on their annual expedition to the grove where the fruit grows.
@@ -57,7 +60,6 @@ trait CalorieCounting {
 
 final case class Snack(value: Int)
 final case class Elf(inv: List[Snack]) {
-  // TODO I think I can conduct this in parallel?
   def caloriesCarried: Int = inv.map(_.value).sum
 }
 
@@ -69,14 +71,14 @@ trait Day01Codec[A] {
 object CalorieCounting {
   import IOService._
 
-  def allElves: List[Elf] =
+  val allElves: List[Elf] =
     IOService.decode(fileSource)
 
-  def allElvesFS2: Stream[IO, Elf] =
+  def allElvesFS2[F[_]: Files]: Stream[F, Elf] =
     inputStream.through(stringToElfPipe)
 
-  def streamPrintedFS2: Stream[IO, Unit] =
-    inputStream.through(stringToElfPipe).through(toConsole)
+  def streamPrintedFS2[F[_]: Files: Functor]: Stream[F, Unit] =
+    inputStream.through(stringToElfPipe).through(toConsolePipe)
 
   def allElvesInvSize(allElves: List[Elf]): List[Int] =
     allElves.map(_.inv.length)
@@ -84,31 +86,36 @@ object CalorieCounting {
   def allElvesSnackStatus(elves: List[Elf]): List[Int] =
     elves.map(_.caloriesCarried)
 
-  def elfWithMostSnacks(elves: List[Elf]) =
+  def elfWithMostSnacks(elves: List[Elf]): Int =
     elves.map(_.caloriesCarried).max
 
-  def elfWithMostSnacksFS2: Stream[IO, Unit] =
+  def elfWithMostSnacksFS2[F[_]: Files: Functor]: Stream[F, Unit] =
     inputStream
       .through(stringToElfPipe)
       .through(mostSnacksPipe)
-      .through(toConsole)
+      .through(toConsolePipe)
 
-  def top3ElvesByCalories(elves: List[Elf]) =
+  def top3ElvesByCalories(elves: List[Elf]): List[Int] =
     allElvesSnackStatus(elves).sorted.takeRight(3)
 
-  def top3ElvesbyCaloriesFS2 = for {
+  def top3ElvesByCaloriesFS2[F[_]: Files]: Stream[F, Int] = for {
     elves <- inputStream.through(stringToElfPipe).through(top3CaloriesPipe)
   } yield elves.map(_.caloriesCarried).sum
 
   def main(args: Array[String]): Unit = {
-    println(allElves.size)
-    println(allElvesFS2.compile.count.unsafeRunSync())
 
-    println(elfWithMostSnacks(allElves))
-    elfWithMostSnacksFS2.compile.drain.unsafeRunSync()
+    val program = for {
+      _ <- IO(println(allElves.size))
+      - <- IO(println(allElvesFS2[IO].compile.count.unsafeRunSync()))
 
-    println(top3ElvesByCalories(allElves).sum)
-    println(top3ElvesbyCaloriesFS2.compile.toList.unsafeRunSync())
+      _ <- IO(println(elfWithMostSnacks(allElves)))
+      _ <- IO(elfWithMostSnacksFS2[IO].compile.drain.unsafeRunSync())
+
+      _ <- IO(println(top3ElvesByCalories(allElves).sum))
+      _ <- IO(println(top3ElvesByCaloriesFS2[IO].compile.last.unsafeRunSync()))
+    } yield ()
+
+    program.unsafeRunSync()
 
     //    println(allElvesInvSize(allElves).min)
     //    streamPrinted.compile.drain.unsafeRunSync()
