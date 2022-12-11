@@ -64,6 +64,18 @@ sealed trait MyGameResult {
   val points: Int
 }
 
+case object Win extends MyGameResult {
+  override val points: Int = 6
+}
+
+case object Lose extends MyGameResult {
+  override val points: Int = 0
+}
+
+case object Draw extends MyGameResult {
+  override val points: Int = 3
+}
+
 object MyGameResult {
   val all = List(Win, Lose, Draw)
 
@@ -119,18 +131,6 @@ object MyGameResult {
       case Draw => oppMove
     }
     result.points + myMove.value
-  }
-
-  case object Win extends MyGameResult {
-    override val points: Int = 6
-  }
-
-  case object Lose extends MyGameResult {
-    override val points: Int = 0
-  }
-
-  case object Draw extends MyGameResult {
-    override val points: Int = 3
   }
 
 }
