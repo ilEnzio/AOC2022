@@ -74,12 +74,6 @@ object CalorieCounting {
   val allElves: List[Elf] =
     IOService.decode(fileSource)
 
-  def allElvesFS2[F[_]: Files]: Stream[F, Elf] =
-    inputStream.through(stringToElfPipe)
-
-  def streamPrintedFS2[F[_]: Files: Functor]: Stream[F, Unit] =
-    inputStream.through(stringToElfPipe).through(toConsolePipe)
-
   def allElvesInvSize(allElves: List[Elf]): List[Int] =
     allElves.map(_.inv.length)
 
@@ -89,17 +83,23 @@ object CalorieCounting {
   def elfWithMostSnacks(elves: List[Elf]): Int =
     elves.map(_.caloriesCarried).max
 
-  def elfWithMostSnacksFS2[F[_]: Files: Functor]: Stream[F, Unit] =
-    inputStream
-      .through(stringToElfPipe)
-      .through(mostSnacksPipe)
-      .through(toConsolePipe)
-
   def top3ElvesByCalories(elves: List[Elf]): List[Int] =
     allElvesSnackStatus(elves).sorted.takeRight(3)
 
+  /** Fs2 - Finally Tagless implementation */
+  def allElvesFS2[F[_]: Files]: Stream[F, Elf] =
+    inputStream.through(stringToElfPipe)
+
+  def streamPrintedFS2[F[_]: Files: Functor]: Stream[F, Unit] =
+    allElvesFS2.through(toConsolePipe)
+
+  def elfWithMostSnacksFS2[F[_]: Files: Functor]: Stream[F, Unit] =
+    allElvesFS2
+      .through(mostSnacksPipe)
+      .through(toConsolePipe)
+
   def top3ElvesByCaloriesFS2[F[_]: Files]: Stream[F, Int] = for {
-    elves <- inputStream.through(stringToElfPipe).through(top3CaloriesPipe)
+    elves <- allElvesFS2.through(top3CaloriesPipe)
   } yield elves.map(_.caloriesCarried).sum
 
   def main(args: Array[String]): Unit = {
