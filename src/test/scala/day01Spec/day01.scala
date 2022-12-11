@@ -1,11 +1,9 @@
 package day01Spec
 
-import scala.io.Source
 import day01_Data.Day01Generators.genElfGroup
 import org.scalacheck.Prop.{forAll, AnyOperators}
 import org.scalacheck.Properties
-import puzzles.day01.Day01Codec
-import puzzles.day01.{CalorieCounting, Elf, Snack}
+import puzzles.day01.{CalorieCounting}
 import puzzles.day01.CalorieCounting.elfWithMostSnacks
 import puzzles.day01.IOService.ElfCodec.{decode, encode}
 import puzzles.day01.IOService.writeFile
@@ -16,7 +14,7 @@ object CalorieCountingSpec extends Properties("CalorieCounting Tests") {
 
     override val fileSource: String = "src/main/scala/inputs/day01_encTest"
   }
-
+// TODO these test should test an Stream[F, Elf] rather than a List[Elves] ???
   property(
     "the maximum calorie count is the number of elves times max snack value"
   ) = forAll(genElfGroup) { allElves =>
@@ -26,7 +24,6 @@ object CalorieCountingSpec extends Properties("CalorieCounting Tests") {
     allElvesSnackStatus.sum < numElves * 15 * 99999
   }
 
-  import Day01_TestIOService._
   property("encode/decode round trip - Elves == Elves -> File -> Elves") =
     forAll(genElfGroup) { elves =>
       val encodedElves = encode(elves)
