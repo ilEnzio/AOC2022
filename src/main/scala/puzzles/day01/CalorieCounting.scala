@@ -1,5 +1,9 @@
 package puzzles.day01
 
+import cats.effect.IO
+import cats.effect.unsafe.implicits.global
+import fs2.Stream
+
 /** --- Day 1: Calorie Counting ---
   *  Santa's reindeer typically eat regular reindeer food, but they need a lot of magical energy to deliver presents on Christmas. For that, their favorite snack is a special type of star fruit that only grows deep in the jungle. The Elves have brought you on their annual expedition to the grove where the fruit grows.
   *
@@ -68,6 +72,12 @@ object CalorieCounting {
   def allElves: List[Elf] =
     IOService.decode(fileSource)
 
+  def allElvesFS2: Stream[IO, Elf] =
+    inputStream.through(stringToElfPipe)
+
+  def streamPrintedFS2: Stream[IO, Unit] =
+    inputStream.through(stringToElfPipe).through(toConsole)
+
   def allElvesInvSize(allElves: List[Elf]): List[Int] =
     allElves.map(_.inv.length)
 
@@ -77,14 +87,30 @@ object CalorieCounting {
   def elfWithMostSnacks(elves: List[Elf]) =
     elves.map(_.caloriesCarried).max
 
+  def elfWithMostSnacksFS2: Stream[IO, Unit] =
+    inputStream
+      .through(stringToElfPipe)
+      .through(mostSnacksPipe)
+      .through(toConsole)
+
   def top3ElvesByCalories(elves: List[Elf]) =
     allElvesSnackStatus(elves).sorted.takeRight(3)
 
+  def top3ElvesbyCaloriesFS2 = for {
+    elves <- inputStream.through(stringToElfPipe).through(top3CaloriesPipe)
+  } yield elves.map(_.caloriesCarried).sum
+
   def main(args: Array[String]): Unit = {
     println(allElves.size)
-    println(elfWithMostSnacks(allElves))
-    println(top3ElvesByCalories(allElves).sum)
-    println(allElvesInvSize(allElves).min)
-  }
+    println(allElvesFS2.compile.count.unsafeRunSync())
 
+    println(elfWithMostSnacks(allElves))
+    elfWithMostSnacksFS2.compile.drain.unsafeRunSync()
+
+    println(top3ElvesByCalories(allElves).sum)
+    println(top3ElvesbyCaloriesFS2.compile.toList.unsafeRunSync())
+
+    //    println(allElvesInvSize(allElves).min)
+    //    streamPrinted.compile.drain.unsafeRunSync()
+  }
 }

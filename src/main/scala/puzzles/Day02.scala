@@ -74,7 +74,7 @@ object MyGameResult {
       case Draw(x) => x
     }
 
-  val opponentMoveMap = Map(
+  val opponentMoveMap: Map[String, Move] = Map(
     "A" -> Rock,
     "B" -> Paper,
     "C" -> Scissor

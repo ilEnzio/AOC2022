@@ -69,7 +69,6 @@ object Day06 {
             (s._1.tail :+ v, s._2 + 1)
         case _ =>
           (s._1 :+ v, s._2 + 1)
-
       }
     }
 
