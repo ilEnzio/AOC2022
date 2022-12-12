@@ -15,13 +15,7 @@ import puzzles.day02.Day02.RockPaperScissors.{
   myScores,
   myScoresFS2
 }
-import puzzles.day02.IOService.{
-  inputStream,
-  movesToRiggedScoresPipe,
-  movesToScorePipe,
-  stringToGameMovesPipe
-}
-
+import puzzles.day02.IOService._
 import scala.io.Source
 
 /** --- Day 2: Rock Paper Scissors ---
