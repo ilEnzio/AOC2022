@@ -1,11 +1,13 @@
 package puzzles.day01
 
-import cats.{Applicative}
+import cats.{Functor}
 import fs2.io.file.{Files, Path}
 import fs2.{Pipe, Stream}
+import puzzles.day01.Day01.{CalorieCounting, Day01Codec, Elf, Snack}
 
 import java.io.{BufferedWriter, FileWriter}
 import scala.io.Source
+import cats.effect.std.Console
 
 object IOService extends CalorieCounting {
 
@@ -77,7 +79,7 @@ object IOService extends CalorieCounting {
           }
         }
         .map(sn => sn.map(snacks => Elf(snacks.map(Snack(_)))))
-      // TODO This emits... seems not right???
+
       elves <- Stream.emits(snackD.reverse)
     } yield elves
 
@@ -97,13 +99,8 @@ object IOService extends CalorieCounting {
       }
     }
 
-// TODO can this also be finally tagless?
-//  val toConsole: Pipe[IO, Elf, Unit] = inStream =>
-//    inStream.evalMap(x => IO(println(x.copy(inv = x.inv.reverse))))
-
-  def toConsolePipe[F[_]: Applicative]: Pipe[F, Elf, Unit] = inStream =>
-    for {
-      _ <- inStream.map(x => println(x.copy(inv = x.inv.reverse)))
-    } yield ()
+  // TODO  can't get this to work
+  def toConsolePipe[F[_]: Console: Functor]: Pipe[F, Elf, Unit] = inStream =>
+    inStream.map(x => Console[F].println(x.copy(inv = x.inv.reverse)))
 
 }

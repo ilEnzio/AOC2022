@@ -1,10 +1,14 @@
 package puzzles.day01
 
-import cats.{Applicative}
+import cats._
 import cats.effect.IO
+import cats.effect.std.Console
+import cats.syntax.all._
 import cats.effect.unsafe.implicits.global
 import fs2.io.file.Files
 import fs2.Stream
+import puzzles.day01.IOService._
+import puzzles.day01.IOService.ElfCodec
 
 /** --- Day 1: Calorie Counting ---
   *  Santa's reindeer typically eat regular reindeer food, but they need a lot of magical energy to deliver presents on Christmas. For that, their favorite snack is a special type of star fruit that only grows deep in the jungle. The Elves have brought you on their annual expedition to the grove where the fruit grows.
@@ -53,70 +57,84 @@ import fs2.Stream
   *
   * Find the top three Elves carrying the most Calories. How many Calories are those Elves carrying in total?
   */
-trait CalorieCounting {
-  val fileSource: String
-}
+object Day01 {
+  trait CalorieCounting {
+    val fileSource: String
+  }
 
-final case class Snack(value: Int)
-final case class Elf(inv: List[Snack]) {
-  def caloriesCarried: Int = inv.map(_.value).sum
-}
+  final case class Snack(value: Int)
 
-trait Day01Codec[A] {
-  def encode(ag: A): String
-  def decode(file: String): A
-}
+  final case class Elf(inv: List[Snack]) {
+    def caloriesCarried: Int = inv.map(_.value).sum
+  }
 
-object CalorieCounting {
-  import IOService._
+  trait Day01Codec[A] {
+    def encode(ag: A): String
 
-  val allElves: List[Elf] =
-    IOService.decode(fileSource)
+    def decode(file: String): A
+  }
 
-  def allElvesInvSize(allElves: List[Elf]): List[Int] =
-    allElves.map(_.inv.length)
+  object CalorieCounting {
 
-  def allElvesSnackStatus(elves: List[Elf]): List[Int] =
-    elves.map(_.caloriesCarried)
+    val allElves: List[Elf] =
+      IOService.decode(fileSource)
 
-  def elfWithMostSnacks(elves: List[Elf]): Int =
-    elves.map(_.caloriesCarried).max
+    def allElvesInvSize(allElves: List[Elf]): List[Int] =
+      allElves.map(_.inv.length)
 
-  def top3ElvesByCalories(elves: List[Elf]): List[Int] =
-    allElvesSnackStatus(elves).sorted.takeRight(3)
+    def allElvesSnackStatus(elves: List[Elf]): List[Int] =
+      elves.map(_.caloriesCarried)
 
-  /** Fs2 - Finally Tagless implementation */
-  def allElvesFS2[F[_]: Files]: Stream[F, Elf] =
-    inputStream.through(stringToElfPipe)
+    def elfWithMostSnacks(elves: List[Elf]): Int =
+      elves.map(_.caloriesCarried).max
 
-  def streamPrintedFS2[F[_]: Files: Applicative]: Stream[F, Unit] =
-    allElvesFS2.through(toConsolePipe)
+    def top3ElvesByCalories(elves: List[Elf]): List[Int] =
+      allElvesSnackStatus(elves).sorted.takeRight(3)
 
-  def elfWithMostSnacksFS2[F[_]: Files: Applicative]: Stream[F, Unit] =
-    allElvesFS2
-      .through(mostSnacksPipe)
-      .through(toConsolePipe)
+    /** Fs2 - Finally Tagless implementation */
+    def allElvesFS2[F[_]: Files]: Stream[F, Elf] =
+      inputStream.through(stringToElfPipe)
 
-  def top3ElvesByCaloriesFS2[F[_]: Files]: Stream[F, Int] = for {
-    elves <- allElvesFS2.through(top3CaloriesPipe)
-  } yield elves.map(_.caloriesCarried).sum
+    // TODO something is wrong with this
+    def streamPrintedFS2[F[_]: Files: Functor: Console]: Stream[F, Unit] =
+      for {
+        _ <- allElvesFS2.through(toConsolePipe)
+      } yield ()
+
+    def elfWithMostSnacksFS2[F[_]: Files: Functor: Console]: Stream[F, Elf] =
+      allElvesFS2
+        .through(mostSnacksPipe)
+
+    def top3ElvesByCaloriesFS2[F[_]: Files]: Stream[F, Int] = for {
+      elves <- allElvesFS2.through(top3CaloriesPipe)
+    } yield elves.map(_.caloriesCarried).sum
+
+  }
 
   def main(args: Array[String]): Unit = {
-
-    val program = for {
-      _ <- IO(println(allElves.size))
-      - <- IO(println(allElvesFS2[IO].compile.count.unsafeRunSync()))
-
-      _ <- IO(println(elfWithMostSnacks(allElves)))
-      _ <- IO(elfWithMostSnacksFS2[IO].compile.drain.unsafeRunSync())
-
-      _ <- IO(println(top3ElvesByCalories(allElves).sum))
-      _ <- IO(println(top3ElvesByCaloriesFS2[IO].compile.last.unsafeRunSync()))
+    import CalorieCounting._
+    def program[F[_]: Console: Monad]: F[Unit] = for {
+//      _ <- Console[F].println(allElvesFS2[IO].compile.toList.unsafeRunSync())
+      _ <- Console[F].println(allElves.size)
+      _ <- Console[F].println(elfWithMostSnacks(allElves))
+      _ <- Console[F].println(top3ElvesByCalories(allElves).sum)
+      _ <- Console[F].println(allElvesFS2[IO].compile.count.unsafeRunSync())
+      _ <- Console[F].println(
+        elfWithMostSnacksFS2[IO].compile.last.unsafeRunSync()
+      )
+      _ <- Console[F].println(
+        top3ElvesByCaloriesFS2[IO].compile.last.unsafeRunSync()
+      )
     } yield ()
 
-    program.unsafeRunSync()
+//    allElvesFS2[IO]
+//      .foreach(Console[IO].println(_))
+//      .compile
+//      .drain
+//      .unsafeRunSync()
 
-    //    println(allElvesInvSize(allElves).min)
-//    streamPrintedFS2[IO].compile.drain.unsafeRunSync()
+    program[IO].unsafeRunSync()
+
   }
+
 }

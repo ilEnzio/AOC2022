@@ -1,5 +1,21 @@
 package puzzles.day02
 
+import cats.syntax.all._
+import cats.{Functor, Monad}
+import cats.effect.IO
+import cats.effect.std.Console
+import cats.effect.unsafe.implicits.global
+import fs2.Stream
+import fs2.io.file.Files
+import puzzles.day02.Day02.RockPaperScissors.{
+  allGameMoves,
+  allGamesFS2,
+  myRiggedScores,
+  myRiggedScoresFS2,
+  myScores,
+  myScoresFS2
+}
+import puzzles.day02.IOService._
 import scala.io.Source
 
 /** --- Day 2: Rock Paper Scissors ---
@@ -44,131 +60,161 @@ import scala.io.Source
   * Following the Elf's instructions for the second column, what would your total score be if everything goes exactly according to your strategy guide?
   */
 
-trait Day02 {}
-
-sealed trait Move {
-  val value: Int
-  val all = List(Rock, Paper, Scissor)
-}
-case object Rock extends Move {
-  override val value: Int = 1
-}
-case object Paper extends Move {
-  override val value: Int = 2
-}
-case object Scissor extends Move {
-  override val value: Int = 3
-}
-
-sealed trait MyGameResult {
-  val points: Int
-}
-
-case object Win extends MyGameResult {
-  override val points: Int = 6
-}
-
-case object Lose extends MyGameResult {
-  override val points: Int = 0
-}
-
-case object Draw extends MyGameResult {
-  override val points: Int = 3
-}
-
-object MyGameResult {
-  val all = List(Win, Lose, Draw)
-
-  val opponentMoveMap: Map[String, Move] = Map(
-    "A" -> Rock,
-    "B" -> Paper,
-    "C" -> Scissor
-  )
-
-  val myMoveMap = Map(
-    "X" -> Rock,
-    "Y" -> Paper,
-    "Z" -> Scissor
-  )
-
-  val resultMap = Map(
-    "X" -> Lose,
-    "Y" -> Draw,
-    "Z" -> Win
-  )
-// TODO this gives and error, but it is a MatchError
-  // rather than a Non-Exhaustive Error... :(
-  def playGame(opponentsMove: Move, myMove: Move): MyGameResult =
-    (opponentsMove, myMove) match {
-      case (Rock, Rock)       => Draw
-      case (Rock, Paper)      => Win
-      case (Rock, Scissor)    => Lose
-      case (Paper, Rock)      => Lose
-      case (Paper, Paper)     => Draw
-      case (Paper, Scissor)   => Win
-      case (Scissor, Rock)    => Win
-      case (Scissor, Paper)   => Lose
-      case (Scissor, Scissor) => Draw
-    }
-
-  def scoreGame(myMove: Move, result: MyGameResult): Int =
-    myMove.value + result.points
-
-  def scoreFixedGame(oppMove: Move, result: MyGameResult): Int = {
-    val myMove = result match {
-      case Win =>
-        oppMove match {
-          case Rock    => Paper
-          case Paper   => Scissor
-          case Scissor => Rock
-        }
-      case Lose =>
-        oppMove match {
-          case Rock    => Scissor
-          case Paper   => Rock
-          case Scissor => Paper
-        }
-      case Draw => oppMove
-    }
-    result.points + myMove.value
+object Day02 {
+  sealed trait Move {
+    val value: Int
+    val all = List(Rock, Paper, Scissor)
+  }
+  case object Rock extends Move {
+    override val value: Int = 1
+  }
+  case object Paper extends Move {
+    override val value: Int = 2
+  }
+  case object Scissor extends Move {
+    override val value: Int = 3
   }
 
-}
+  sealed trait MyGameResult {
+    val points: Int
+  }
 
-object Day02 {
-// TODO gotta fix this object
-  val allGameMoves: List[(Move, Move, MyGameResult)] = Source
-    .fromFile("src/main/scala/inputs/day02")
-    .getLines()
-    .mkString("")
-    .grouped(3)
-    .toList
-    .map {
-      _.toList match {
-        case h :: _ :: t =>
-          (
-            MyGameResult.opponentMoveMap(h.toString),
-            MyGameResult.myMoveMap(t.head.toString),
-            MyGameResult.resultMap(t.head.toString)
-          )
+  case object Win extends MyGameResult {
+    override val points: Int = 6
+  }
+
+  case object Lose extends MyGameResult {
+    override val points: Int = 0
+  }
+
+  case object Draw extends MyGameResult {
+    override val points: Int = 3
+  }
+
+  object MyGameResult {
+    val all = List(Win, Lose, Draw)
+
+    val opponentMoveMap: Map[String, Move] = Map(
+      "A" -> Rock,
+      "B" -> Paper,
+      "C" -> Scissor
+    )
+
+    val myMoveMap = Map(
+      "X" -> Rock,
+      "Y" -> Paper,
+      "Z" -> Scissor
+    )
+
+    val resultMap = Map(
+      "X" -> Lose,
+      "Y" -> Draw,
+      "Z" -> Win
+    )
+// TODO this gives and error, but it is a MatchError
+    // rather than a Non-Exhaustive Error... :(
+    def playGame(opponentsMove: Move, myMove: Move): MyGameResult =
+      (opponentsMove, myMove) match {
+        case (Rock, Rock)       => Draw
+        case (Rock, Paper)      => Win
+        case (Rock, Scissor)    => Lose
+        case (Paper, Rock)      => Lose
+        case (Paper, Paper)     => Draw
+        case (Paper, Scissor)   => Win
+        case (Scissor, Rock)    => Win
+        case (Scissor, Paper)   => Lose
+        case (Scissor, Scissor) => Draw
       }
+
+    def scoreGame(myMove: Move, result: MyGameResult): Int =
+      myMove.value + result.points
+
+    def scoreFixedGame(oppMove: Move, result: MyGameResult): Int = {
+      val myMove = result match {
+        case Win =>
+          oppMove match {
+            case Rock    => Paper
+            case Paper   => Scissor
+            case Scissor => Rock
+          }
+        case Lose =>
+          oppMove match {
+            case Rock    => Scissor
+            case Paper   => Rock
+            case Scissor => Paper
+          }
+        case Draw => oppMove
+      }
+      result.points + myMove.value
     }
 
-// Part 1
-  val myScores: Seq[Int] = for {
-    (oppMove, myMove, _) <- allGameMoves
-    result = MyGameResult.playGame(oppMove, myMove)
-  } yield MyGameResult.scoreGame(myMove, result)
+  }
 
-  // Part 2
-  val myRiggedScores: Seq[Int] = for {
-    (oppMove, _, result) <- allGameMoves
-  } yield MyGameResult.scoreFixedGame(oppMove, result)
+  trait RockPaperScissors {
+    val fileSource: String
+  }
+  object RockPaperScissors {
+// TODO gotta fix this object
+
+    val allGameMoves: List[(Move, Move, MyGameResult)] = Source
+      .fromFile("src/main/scala/inputs/day02")
+      .getLines()
+      .mkString("")
+      .grouped(3)
+      .toList
+      .map {
+        _.toCharArray match {
+          case Array(h, _, t) =>
+            (
+              MyGameResult.opponentMoveMap(h.toString),
+              MyGameResult.myMoveMap(t.toString),
+              MyGameResult.resultMap(t.toString)
+            )
+        }
+      }
+
+// Part 1
+    val myScores: Seq[Int] = for {
+      (oppMove, myMove, _) <- allGameMoves
+      result = MyGameResult.playGame(oppMove, myMove)
+    } yield MyGameResult.scoreGame(myMove, result)
+
+    // Part 2
+    val myRiggedScores: Seq[Int] = for {
+      (oppMove, _, result) <- allGameMoves
+    } yield MyGameResult.scoreFixedGame(oppMove, result)
+
+    /** Fs2 - Finally Tagless impl
+      */
+
+    def allGamesFS2[F[_]: Files]: Stream[F, (Move, Move, MyGameResult)] =
+      inputStream.through(stringToGameMovesPipe)
+
+    def myScoresFS2[F[_]: Files]: Stream[F, Int] =
+      allGamesFS2.through(movesToScorePipe)
+
+    def myRiggedScoresFS2[F[_]: Files]: Stream[F, Int] =
+      allGamesFS2.through(movesToRiggedScoresPipe)
+
+  }
 
   def main(args: Array[String]): Unit = {
     println(allGameMoves)
     println(myScores.sum)
     println(myRiggedScores.sum)
-  }
 
+    def program[F[_]: Console: Monad]: F[Unit] = for {
+      _ <- Console[F].println(
+        allGamesFS2[IO].compile.toList.unsafeRunSync().reverse
+      )
+      _ <- Console[F].println(
+        myScoresFS2[IO].compile.toList.unsafeRunSync().sum
+      )
+      _ <- Console[F].println(
+        myRiggedScoresFS2[IO].compile.toList.unsafeRunSync().sum
+      )
+    } yield ()
+
+    program[IO].unsafeRunSync()
+  }
 }

@@ -1,8 +1,8 @@
-package day01_Data
+package puzzleData
 
 import org.scalacheck.Gen
-import org.scalacheck.Gen.{choose, listOf, listOfN}
-import puzzles.day01.{Elf, Snack}
+import org.scalacheck.Gen.{choose, listOfN}
+import puzzles.day01.Day01.{Elf, Snack}
 
 object Day01Generators {
 
