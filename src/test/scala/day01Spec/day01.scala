@@ -1,10 +1,10 @@
 package day01Spec
 
-import day01_Data.Day01Generators.genElfGroup
+import puzzleData.Day01Generators.genElfGroup
 import org.scalacheck.Prop.{forAll, AnyOperators}
 import org.scalacheck.Properties
-import puzzles.day01.{CalorieCounting}
-import puzzles.day01.CalorieCounting.elfWithMostSnacks
+import puzzles.day01.Day01.{CalorieCounting}
+import puzzles.day01.Day01.CalorieCounting.elfWithMostSnacks
 import puzzles.day01.IOService.ElfCodec.{decode, encode}
 import puzzles.day01.IOService.writeFile
 
