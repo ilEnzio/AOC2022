@@ -1,15 +1,17 @@
 package puzzles.day02
 
-import cats.syntax.all._
-import cats.{Monad}
+import cats.Monad
+import cats.data.Reader
 import cats.effect.IO
+import cats.effect.kernel.Concurrent
 import cats.effect.std.Console
 import cats.effect.unsafe.implicits.global
-import fs2.Stream
+import fs2.{Pipe, Stream}
 import fs2.io.file.Files
+
 import puzzles.day02.Day02.RockPaperScissors._
 import puzzles.day02.IOService._
-import scala.io.Source
+import puzzles.day02.IOService.toConsolePipe
 
 /** --- Day 2: Rock Paper Scissors ---
   * The Elves begin to set up camp on the beach. To decide whose tent gets to be closest to the snack storage, a giant Rock Paper Scissors tournament is already in progress.
@@ -149,23 +151,6 @@ object Day02 {
   object RockPaperScissors {
 // TODO gotta fix this object
 
-    val allGameMoves: List[(Move, Move, MyGameResult)] = Source
-      .fromFile("src/main/scala/inputs/day02")
-      .getLines()
-      .mkString("")
-      .grouped(3)
-      .toList
-      .map {
-        _.toCharArray match {
-          case Array(h, _, t) =>
-            (
-              MyGameResult.opponentMoveMap(h.toString),
-              MyGameResult.myMoveMap(t.toString),
-              MyGameResult.resultMap(t.toString)
-            )
-        }
-      }
-
 // Part 1
     val myScores: Seq[Int] = for {
       (oppMove, myMove, _) <- allGameMoves
@@ -183,31 +168,29 @@ object Day02 {
     def allGamesFS2[F[_]: Files]: Stream[F, (Move, Move, MyGameResult)] =
       inputStream.through(stringToGameMovesPipe)
 
-    def myScoresFS2[F[_]: Files]: Stream[F, Int] =
-      allGamesFS2.through(movesToScorePipe)
+    def myScoresTotalFS2[F[_]: Files]: Stream[F, Int] =
+      allGamesFS2.through(movesToScoreTotalPipe)
 
-    def myRiggedScoresFS2[F[_]: Files]: Stream[F, Int] =
-      allGamesFS2.through(movesToRiggedScoresPipe)
-
+    def myRiggedScoresTotalFS2[F[_]: Files]: Stream[F, Int] =
+      allGamesFS2.through(movesToRiggedScoreTotalPipe)
   }
+
+  def outputStream[F[_]: Monad, A, B](
+    stream: Stream[F, A]
+  ): Reader[Pipe[F, A, Unit], Stream[F, Unit]] =
+    Reader(pipe => stream.through(pipe))
 
   def main(args: Array[String]): Unit = {
     println(allGameMoves)
     println(myScores.sum)
     println(myRiggedScores.sum)
 
-    def program[F[_]: Console: Monad]: F[Unit] = for {
-      _ <- Console[F].println(
-        allGamesFS2[IO].compile.toList.unsafeRunSync().reverse
-      )
-      _ <- Console[F].println(
-        myScoresFS2[IO].compile.toList.unsafeRunSync().sum
-      )
-      _ <- Console[F].println(
-        myRiggedScoresFS2[IO].compile.toList.unsafeRunSync().sum
-      )
-    } yield ()
+    def program[F[_]: Console: Monad: Files: Concurrent]
+      : Reader[Pipe[F, Int, Unit], Stream[F, Unit]] = for {
+      s1 <- outputStream(myScoresTotalFS2)
+      s2 <- outputStream(myRiggedScoresTotalFS2)
+    } yield s1 ++ s2
 
-    program[IO].unsafeRunSync()
+    program[IO].run(toConsolePipe[IO]).compile.drain.unsafeRunSync()
   }
 }
