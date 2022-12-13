@@ -1,8 +1,8 @@
 package puzzles.day01
 
 import cats._
-import cats.data.Reader
-import cats.effect.{IO}
+import cats.data.{Kleisli, Reader}
+import cats.effect.IO
 import cats.effect.kernel.Concurrent
 import cats.effect.std.Console
 import cats.syntax.all._
@@ -97,17 +97,11 @@ object Day01 {
     def allElvesFS2[F[_]: Files]: Stream[F, Elf] =
       inputStream.through(stringToElfPipe)
 
-    // TODO something is wrong with this
-    def streamPrintedFS2[F[_]: Files: Functor: Console]: Stream[F, Unit] =
-      for {
-        _ <- allElvesFS2.through(toConsolePipe)
-      } yield ()
-
     def elfWithMostSnacksFS2[F[_]: Files: Functor: Console]: Stream[F, Elf] =
       allElvesFS2
         .through(mostSnacksPipe)
 
-    def top3ElvesByCaloriesFS2[F[_]: Files]: Stream[F, Elf] = for {
+    def top3ElvesCalorieTotalFS2[F[_]: Files]: Stream[F, Elf] = for {
       elves <- allElvesFS2.through(top3CaloriesPipe)
     } yield Elf(List(Snack(elves.map(_.caloriesCarried).sum)))
   }
@@ -120,42 +114,15 @@ object Day01 {
 
   def main(args: Array[String]): Unit = {
     import CalorieCounting._
-    def program[F[_]: Console: Monad: Files]: F[Unit] = for {
-//      _ <- Console[F].println(allElvesFS2[IO].compile.toList.unsafeRunSync())
-      _ <- Console[F].println(
-        streamPrintedFS2[IO].compile.drain.unsafeRunSync()
-      )
-      _ <- Console[F].println(allElves.size)
-      _ <- Console[F].println(elfWithMostSnacks(allElves))
-      _ <- Console[F].println(top3ElvesByCalories(allElves).sum)
-      _ <- Console[F].println(allElvesFS2[IO].compile.count.unsafeRunSync())
-      _ <- Console[F].println(
-        elfWithMostSnacksFS2[IO].compile.last.unsafeRunSync()
-      )
-      _ <- Console[F].println(
-        top3ElvesByCaloriesFS2[IO].compile.last.unsafeRunSync()
-      )
-    } yield ()
 
-    def program2[F[_]: Console: Monad: Files: Concurrent]: F[Unit] = for {
-      _ <- outputStream(allElvesFS2[F]).run(toConsolePipe).compile.drain
-      _ <- outputStream(elfWithMostSnacksFS2[F])
-        .run(toConsolePipe)
-        .compile
-        .drain
-      _ <- outputStream(top3ElvesByCaloriesFS2[F])
-        .run(toConsolePipe)
-        .compile
-        .drain
-    } yield ()
-    //    allElvesFS2[IO]
-//      .foreach(Console[IO].println(_))
-//      .compile
-//      .drain
-//      .unsafeRunSync()
-//    val test = streamPrintedFS2[IO].compile.drain
-//    program[IO].unsafeRunSync()
-    program2[IO].unsafeRunSync()
+    def program3[F[_]: Console: Monad: Files: Concurrent]
+      : Reader[Pipe[F, Elf, Unit], Stream[F, Unit]] = for {
+      s1 <- outputStream(allElvesFS2[F])
+      s2 <- outputStream(elfWithMostSnacksFS2[F])
+      s3 <- outputStream(top3ElvesCalorieTotalFS2[F])
+    } yield s1 ++ s2 ++ s3
+
+    program3[IO].run(toConsolePipe[IO]).compile.drain.unsafeRunSync()
 
   }
 

@@ -99,7 +99,6 @@ object IOService extends CalorieCounting {
       }
     }
 
-  // TODO  can't get this to work
   def toConsolePipe[F[_]: Console: Functor]: Pipe[F, Elf, Unit] = inStream =>
     inStream.evalMap(x => Console[F].println(x.copy(inv = x.inv.reverse)))
 
