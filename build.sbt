@@ -4,7 +4,7 @@ version := "0.1"
 
 scalaVersion := "2.13.10"
 
-scalacOptions += "-Xfatal-warnings"
+//scalacOptions += "-Xfatal-warnings"
 
 Test / testOptions +=
   Tests.Argument(

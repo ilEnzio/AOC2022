@@ -2,7 +2,8 @@ package puzzles.day01
 
 import cats._
 import cats.data.Reader
-import cats.effect.IO
+import cats.effect.{IO}
+import cats.effect.kernel.Concurrent
 import cats.effect.std.Console
 import cats.syntax.all._
 import cats.effect.unsafe.implicits.global
@@ -136,13 +137,13 @@ object Day01 {
       )
     } yield ()
 
-    def program2[F[_]: Console: Monad: Files]: IO[Unit] = for {
-      _ <- outputStream(allElvesFS2[IO]).run(toConsolePipe).compile.drain
-      _ <- outputStream(elfWithMostSnacksFS2[IO])
+    def program2[F[_]: Console: Monad: Files: Concurrent]: F[Unit] = for {
+      _ <- outputStream(allElvesFS2[F]).run(toConsolePipe).compile.drain
+      _ <- outputStream(elfWithMostSnacksFS2[F])
         .run(toConsolePipe)
         .compile
         .drain
-      _ <- outputStream(top3ElvesByCaloriesFS2[IO])
+      _ <- outputStream(top3ElvesByCaloriesFS2[F])
         .run(toConsolePipe)
         .compile
         .drain

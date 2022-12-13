@@ -72,6 +72,7 @@ object SupplyOps {
     def doPop(n: Int, s1: Stack, s2: Stack): (Stack, Stack) =
       if (n <= 0) (s1, s2)
       else {
+        // TODO how to make this exhaustive?
         (s1.crates, s2.crates) match {
           case (h :: t, x) => doPop(n - 1, Stack(t), Stack(h :: x))
         }
