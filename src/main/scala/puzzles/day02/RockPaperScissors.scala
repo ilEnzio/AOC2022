@@ -1,20 +1,13 @@
 package puzzles.day02
 
 import cats.syntax.all._
-import cats.{Functor, Monad}
+import cats.{Monad}
 import cats.effect.IO
 import cats.effect.std.Console
 import cats.effect.unsafe.implicits.global
 import fs2.Stream
 import fs2.io.file.Files
-import puzzles.day02.Day02.RockPaperScissors.{
-  allGameMoves,
-  allGamesFS2,
-  myRiggedScores,
-  myRiggedScoresFS2,
-  myScores,
-  myScoresFS2
-}
+import puzzles.day02.Day02.RockPaperScissors._
 import puzzles.day02.IOService._
 import scala.io.Source
 

@@ -113,8 +113,11 @@ object Day01 {
 
   def main(args: Array[String]): Unit = {
     import CalorieCounting._
-    def program[F[_]: Console: Monad]: F[Unit] = for {
+    def program[F[_]: Console: Monad: Files]: F[Unit] = for {
 //      _ <- Console[F].println(allElvesFS2[IO].compile.toList.unsafeRunSync())
+      _ <- Console[F].println(
+        streamPrintedFS2[IO].compile.drain.unsafeRunSync()
+      )
       _ <- Console[F].println(allElves.size)
       _ <- Console[F].println(elfWithMostSnacks(allElves))
       _ <- Console[F].println(top3ElvesByCalories(allElves).sum)
@@ -132,7 +135,7 @@ object Day01 {
 //      .compile
 //      .drain
 //      .unsafeRunSync()
-
+//    val test = streamPrintedFS2[IO].compile.drain
     program[IO].unsafeRunSync()
 
   }
