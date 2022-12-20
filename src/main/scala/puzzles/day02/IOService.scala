@@ -4,16 +4,16 @@ import cats.Functor
 import cats.effect.std.Console
 import fs2.{Pipe, Stream}
 import fs2.io.file.{Files, Path}
-import puzzles.day02.Day02.{Move, MyGameResult, RockPaperScissors}
+import puzzles.day02.Day02.{Move, MyGameResult}
 
 import scala.io.Source
 
 // TODO Change this trait
-object IOService extends RockPaperScissors {
+object IOService {
 
-  override val fileSource: String = "src/main/scala/inputs/day02"
+  val fileSource: String = "src/main/scala/inputs/day02"
 
-  val allGameMoves: List[(Move, Move, MyGameResult)] = Source
+  def allGameMoves: List[(Move, Move, MyGameResult)] = Source
     .fromFile(fileSource)
     .getLines()
     .mkString("")

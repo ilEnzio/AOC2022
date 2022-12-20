@@ -97,7 +97,7 @@ object Day01 {
     def allElvesFS2[F[_]: Files]: Stream[F, Elf] =
       inputStream.through(stringToElfPipe)
 
-    def elfWithMostSnacksFS2[F[_]: Files: Functor: Console]: Stream[F, Elf] =
+    def elfWithMostSnacksFS2[F[_]: Files]: Stream[F, Elf] =
       allElvesFS2
         .through(mostSnacksPipe)
 

@@ -56,17 +56,25 @@ import puzzles.day02.IOService.toConsolePipe
   */
 
 object Day02 {
+
   sealed trait Move {
     val value: Int
-    val all = List(Rock, Paper, Scissor)
+    val all = List(Rock, Paper, Scissors)
   }
+
+  trait MyMove
+  trait OpponentMove
+
   case object Rock extends Move {
+
     override val value: Int = 1
   }
   case object Paper extends Move {
+
     override val value: Int = 2
   }
-  case object Scissor extends Move {
+  case object Scissors extends Move {
+
     override val value: Int = 3
   }
 
@@ -89,16 +97,17 @@ object Day02 {
   object MyGameResult {
     val all = List(Win, Lose, Draw)
 
-    val opponentMoveMap: Map[String, Move] = Map(
-      "A" -> Rock,
-      "B" -> Paper,
-      "C" -> Scissor
-    )
+    val opponentMoveMap: Map[String, Move] =
+      Map(
+        "A" -> Rock,
+        "B" -> Paper,
+        "C" -> Scissors
+      )
 
-    val myMoveMap = Map(
+    val myMoveMap: Map[String, Move] = Map(
       "X" -> Rock,
       "Y" -> Paper,
-      "Z" -> Scissor
+      "Z" -> Scissors
     )
 
     val resultMap = Map(
@@ -108,35 +117,41 @@ object Day02 {
     )
 // TODO this gives and error, but it is a MatchError
     // rather than a Non-Exhaustive Error... :(
-    def playGame(opponentsMove: Move, myMove: Move): MyGameResult =
+    def playGame[A <: OpponentMove, B <: MyMove](
+      opponentsMove: Move,
+      myMove: Move
+    ): MyGameResult =
       (opponentsMove, myMove) match {
-        case (Rock, Rock)       => Draw
-        case (Rock, Paper)      => Win
-        case (Rock, Scissor)    => Lose
-        case (Paper, Rock)      => Lose
-        case (Paper, Paper)     => Draw
-        case (Paper, Scissor)   => Win
-        case (Scissor, Rock)    => Win
-        case (Scissor, Paper)   => Lose
-        case (Scissor, Scissor) => Draw
+        case (Rock, Rock)         => Draw
+        case (Rock, Paper)        => Win
+        case (Rock, Scissors)     => Lose
+        case (Paper, Rock)        => Lose
+        case (Paper, Paper)       => Draw
+        case (Paper, Scissors)    => Win
+        case (Scissors, Rock)     => Win
+        case (Scissors, Paper)    => Lose
+        case (Scissors, Scissors) => Draw
       }
 
     def scoreGame(myMove: Move, result: MyGameResult): Int =
       myMove.value + result.points
 
-    def scoreFixedGame(oppMove: Move, result: MyGameResult): Int = {
+    def scoreFixedGame(
+      oppMove: Move,
+      result: MyGameResult
+    ): Int = {
       val myMove = result match {
         case Win =>
           oppMove match {
-            case Rock    => Paper
-            case Paper   => Scissor
-            case Scissor => Rock
+            case Rock     => Paper
+            case Paper    => Scissors
+            case Scissors => Rock
           }
         case Lose =>
           oppMove match {
-            case Rock    => Scissor
-            case Paper   => Rock
-            case Scissor => Paper
+            case Rock     => Scissors
+            case Paper    => Rock
+            case Scissors => Paper
           }
         case Draw => oppMove
       }
@@ -187,8 +202,8 @@ object Day02 {
 
     def program[F[_]: Console: Monad: Files: Concurrent]
       : Reader[Pipe[F, Int, Unit], Stream[F, Unit]] = for {
-      s1 <- outputStream(myScoresTotalFS2)
-      s2 <- outputStream(myRiggedScoresTotalFS2)
+      s1 <- outputStream(myScoresTotalFS2[F])
+      s2 <- outputStream(myRiggedScoresTotalFS2[F])
     } yield s1 ++ s2
 
     program[IO].run(toConsolePipe[IO]).compile.drain.unsafeRunSync()

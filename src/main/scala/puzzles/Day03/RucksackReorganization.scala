@@ -1,4 +1,23 @@
-package puzzles
+package puzzles.Day03
+
+import cats.effect.IO
+import cats.effect.unsafe.implicits.global
+import fs2.io.file.Files
+import fs2.{Pipe, Stream}
+import puzzles.Day03.IOService.{
+  inputStream,
+  ruckSackToCommonCharSumPipe,
+  ruckSackToCommonCharsPipe,
+  ruckSackToConsolePipe,
+  ruckSacktoStringPipe,
+  stringToConsolePipe,
+  stringToRuckSacksPipe
+}
+import cats._
+import cats.data._
+import cats.effect.kernel.Concurrent
+import cats.effect.std.Console
+import cats.syntax.all._
 
 import scala.io.Source
 
@@ -96,14 +115,49 @@ object Day03 {
 
   val elfGroupItems = allElfGroups.map(elfGroupCommonItems(_)(0))
 
-  def main(args: Array[String]): Unit = {
-    println(allCommonItems)
-    println(allCommonItems.map(charToInt(_)).sum) // 96, 4
+  /** Fs2 - Finally Tagless impl
+    */
 
+  def allRuckSacksFS2[F[_]: Files]: Stream[F, RuckSack] =
+    inputStream.through(stringToRuckSacksPipe)
+
+  def allRuckSacksAsStringsFS2[F[_]: Files]: Stream[F, String] =
+    inputStream.through(stringToRuckSacksPipe).through(ruckSacktoStringPipe)
+
+  def allCommonItemsFS2[F[_]: Files]: Stream[F, String] =
+    allRuckSacksFS2.through(ruckSackToCommonCharsPipe)
+
+  def allCommonItemsSumFS2[F[_]: Files]: Stream[F, String] =
+    allRuckSacksFS2.through(ruckSackToCommonCharSumPipe)
+
+  // P[F, A, B] => Stream[F, Unit]
+  def outputStream[F[_]: Monad, A, B](
+    stream: Stream[F, A]
+  ): Reader[Pipe[F, A, Unit], Stream[F, Unit]] =
+    Reader(pipe => stream.through(pipe))
+
+  // Convert everything to string
+  // then use dependency injection on the string.
+  // so that means my toConsole pipe is: stringToConsolePipe
+
+  def main(args: Array[String]): Unit = {
+    //    println(allCommonItems)
+    println(allCommonItems.map(charToInt(_)).sum) // 96, 4
+//
     println(allElfGroups)
-    println(allElfGroups.map(elfGroupCommonItems(_)))
-    println(elfGroupItems.map(charToInt(_)).sum)
+//    println(allElfGroups.map(elfGroupCommonItems(_)))
+//    println(elfGroupItems.map(charToInt(_)).sum)
+
+    //  println(allRuckSacksFS2[IO].compile.toList.unsafeRunSync())
+    //  println(allCommonItemsFS2[IO].compile.toList.unsafeRunSync())
+
+    def program[F[_]: Monad: Files: Console: Concurrent]
+      : Reader[Pipe[F, String, Unit], Stream[F, Unit]] = for {
+//      s1 <- outputStream(allRuckSacksAsStringsFS2[F])
+      s2 <- outputStream(allCommonItemsSumFS2[F])
+    } yield s2
+
+    program[IO].run(stringToConsolePipe[IO]).compile.drain.unsafeRunSync()
 
   }
-
 }
