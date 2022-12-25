@@ -4,7 +4,7 @@ import cats.Functor
 import cats.effect.std.Console
 import fs2.{Pipe, Stream}
 import fs2.io.file.{Files, Path}
-import puzzles.day02.Day02.{Move, MyGameResult, MyMove, OpponentMove}
+import puzzles.day02.Day02.{Hero, Move, MyGameResult, Villain}
 
 import scala.io.Source
 
@@ -13,7 +13,7 @@ object IOService {
 
   val fileSource: String = "src/main/scala/inputs/day02"
 
-  def allGameMoves: List[(Move[OpponentMove], Move[MyMove], MyGameResult)] =
+  def allGameMoves: List[(Move[Villain], Move[Hero], MyGameResult)] =
     Source
       .fromFile(fileSource)
       .getLines()
@@ -38,11 +38,11 @@ object IOService {
       .readUtf8Lines(Path(fileSource))
 
   def stringToGameMovesPipe[F[_]]
-    : Pipe[F, String, (Move[OpponentMove], Move[MyMove], MyGameResult)] =
+    : Pipe[F, String, (Move[Villain], Move[Hero], MyGameResult)] =
     inStream => {
       for {
         gameMoves <- inStream.fold(
-          List.empty[(Move[OpponentMove], Move[MyMove], MyGameResult)]
+          List.empty[(Move[Villain], Move[Hero], MyGameResult)]
         ) { (s, v) =>
           v.toCharArray match {
             case Array(h, _, t) =>
@@ -66,7 +66,7 @@ object IOService {
 //      } yield MyGameResult.scoreGame(myMove, result)
 
   def movesToScoreTotalPipe[F[_]]
-    : Pipe[F, (Move[OpponentMove], Move[MyMove], MyGameResult), Int] =
+    : Pipe[F, (Move[Villain], Move[Hero], MyGameResult), Int] =
     inStream =>
       inStream.fold(0) { case (s, v) =>
         val (oppMove, myMove, _) = v
@@ -81,7 +81,7 @@ object IOService {
 //      } yield MyGameResult.scoreFixedGame(oppMove, result)
 
   def movesToRiggedScoreTotalPipe[F[_]]
-    : Pipe[F, (Move[OpponentMove], Move[MyMove], MyGameResult), Int] =
+    : Pipe[F, (Move[Villain], Move[Hero], MyGameResult), Int] =
     inStream =>
       inStream.fold(0) { case (s, v) =>
         val (oppMove, _, result) = v

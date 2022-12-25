@@ -59,17 +59,17 @@ object Day02 {
   sealed trait Move[A] {
     val value: Int
   }
-  sealed trait Initiative
-  trait OpponentMove extends Initiative
-  trait MyMove       extends Initiative
+  sealed trait Player
+  trait Villain extends Player
+  trait Hero    extends Player
 
-  case class Rock[A <: Initiative]() extends Move[A] {
+  case class Rock[A <: Player]() extends Move[A] {
     override val value: Int = 1
   }
-  case class Paper[A <: Initiative]() extends Move[A] {
+  case class Paper[A <: Player]() extends Move[A] {
     override val value: Int = 2
   }
-  case class Scissors[A <: Initiative]() extends Move[A] {
+  case class Scissors[A <: Player]() extends Move[A] {
     override val value: Int = 3
   }
 
@@ -93,17 +93,17 @@ object Day02 {
 
     val all = List(Win, Lose, Draw)
 
-    val opponentMoveMap: Map[String, Move[OpponentMove]] =
+    val opponentMoveMap: Map[String, Move[Villain]] =
       Map(
-        "A" -> Rock[OpponentMove],
-        "B" -> Paper[OpponentMove],
-        "C" -> Scissors[OpponentMove]
+        "A" -> Rock[Villain],
+        "B" -> Paper[Villain],
+        "C" -> Scissors[Villain]
       )
 
-    val myMoveMap: Map[String, Move[MyMove]] = Map(
-      "X" -> Rock[MyMove],
-      "Y" -> Paper[MyMove],
-      "Z" -> Scissors[MyMove]
+    val myMoveMap: Map[String, Move[Hero]] = Map(
+      "X" -> Rock[Hero],
+      "Y" -> Paper[Hero],
+      "Z" -> Scissors[Hero]
     )
 
     val resultMap = Map(
@@ -113,46 +113,46 @@ object Day02 {
     )
 // TODO this gives and error, but it is a MatchError
     def playGame(
-      opponentsMove: Move[OpponentMove],
-      myMove: Move[MyMove]
+      opponentsMove: Move[Villain],
+      myMove: Move[Hero]
     ): MyGameResult =
       (opponentsMove, myMove) match {
-        case (_: Rock[OpponentMove], _: Rock[MyMove])         => Draw
-        case (_: Rock[OpponentMove], _: Paper[MyMove])        => Win
-        case (_: Rock[OpponentMove], _: Scissors[MyMove])     => Lose
-        case (_: Paper[OpponentMove], _: Rock[MyMove])        => Lose
-        case (_: Paper[OpponentMove], _: Paper[MyMove])       => Draw
-        case (_: Paper[OpponentMove], _: Scissors[MyMove])    => Win
-        case (_: Scissors[OpponentMove], _: Rock[MyMove])     => Win
-        case (_: Scissors[OpponentMove], _: Paper[MyMove])    => Lose
-        case (_: Scissors[OpponentMove], _: Scissors[MyMove]) => Draw
+        case (_: Rock[Villain], _: Rock[Hero])         => Draw
+        case (_: Rock[Villain], _: Paper[Hero])        => Win
+        case (_: Rock[Villain], _: Scissors[Hero])     => Lose
+        case (_: Paper[Villain], _: Rock[Hero])        => Lose
+        case (_: Paper[Villain], _: Paper[Hero])       => Draw
+        case (_: Paper[Villain], _: Scissors[Hero])    => Win
+        case (_: Scissors[Villain], _: Rock[Hero])     => Win
+        case (_: Scissors[Villain], _: Paper[Hero])    => Lose
+        case (_: Scissors[Villain], _: Scissors[Hero]) => Draw
       }
 
-    def scoreGame(myMove: Move[MyMove], result: MyGameResult): Int =
+    def scoreGame(myMove: Move[Hero], result: MyGameResult): Int =
       myMove.value + result.points
 
     def scoreFixedGame(
-      oppMove: Move[OpponentMove],
+      oppMove: Move[Villain],
       result: MyGameResult
     ): Int = {
       val myMove = result match {
         case Win =>
           oppMove match {
-            case _: Rock[OpponentMove]     => Paper[MyMove]
-            case _: Paper[OpponentMove]    => Scissors[MyMove]
-            case _: Scissors[OpponentMove] => Rock[MyMove]
+            case _: Rock[Villain]     => Paper[Hero]
+            case _: Paper[Villain]    => Scissors[Hero]
+            case _: Scissors[Villain] => Rock[Hero]
           }
         case Lose =>
           oppMove match {
-            case _: Rock[OpponentMove]     => Scissors[MyMove]
-            case _: Paper[OpponentMove]    => Rock[MyMove]
-            case _: Scissors[OpponentMove] => Paper[MyMove]
+            case _: Rock[Villain]     => Scissors[Hero]
+            case _: Paper[Villain]    => Rock[Hero]
+            case _: Scissors[Villain] => Paper[Hero]
           }
         case Draw =>
           oppMove match {
-            case _: Rock[OpponentMove]     => Rock[MyMove]
-            case _: Paper[OpponentMove]    => Paper[MyMove]
-            case _: Scissors[OpponentMove] => Scissors[MyMove]
+            case _: Rock[Villain]     => Rock[Hero]
+            case _: Paper[Villain]    => Paper[Hero]
+            case _: Scissors[Villain] => Scissors[Hero]
           }
       }
       result.points + myMove.value
@@ -181,7 +181,7 @@ object Day02 {
       */
 
     def allGamesFS2[F[_]: Files]
-      : Stream[F, (Move[OpponentMove], Move[MyMove], MyGameResult)] =
+      : Stream[F, (Move[Villain], Move[Hero], MyGameResult)] =
       inputStream.through(stringToGameMovesPipe)
 
     def myScoresTotalFS2[F[_]: Files]: Stream[F, Int] =
@@ -201,8 +201,8 @@ object Day02 {
 //    println(myScores.sum)
 //    println(myRiggedScores.sum)
 
-    val mm = Rock[MyMove]
-    val om = Paper[OpponentMove]
+    val mm = Rock[Hero]
+    val om = Paper[Villain]
 
     println(MyGameResult.playGame(om, mm))
 
