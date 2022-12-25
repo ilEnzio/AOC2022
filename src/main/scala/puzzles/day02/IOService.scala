@@ -4,7 +4,7 @@ import cats.Functor
 import cats.effect.std.Console
 import fs2.{Pipe, Stream}
 import fs2.io.file.{Files, Path}
-import puzzles.day02.Day02.{Move, MyGameResult}
+import puzzles.day02.Day02.{Move, MyGameResult, MyMove, OpponentMove}
 
 import scala.io.Source
 
@@ -13,22 +13,23 @@ object IOService {
 
   val fileSource: String = "src/main/scala/inputs/day02"
 
-  def allGameMoves: List[(Move, Move, MyGameResult)] = Source
-    .fromFile(fileSource)
-    .getLines()
-    .mkString("")
-    .grouped(3)
-    .toList
-    .map {
-      _.toCharArray match {
-        case Array(h, _, t) =>
-          (
-            MyGameResult.opponentMoveMap(h.toString),
-            MyGameResult.myMoveMap(t.toString),
-            MyGameResult.resultMap(t.toString)
-          )
+  def allGameMoves: List[(Move[OpponentMove], Move[MyMove], MyGameResult)] =
+    Source
+      .fromFile(fileSource)
+      .getLines()
+      .mkString("")
+      .grouped(3)
+      .toList
+      .map {
+        _.toCharArray match {
+          case Array(h, _, t) =>
+            (
+              MyGameResult.opponentMoveMap(h.toString),
+              MyGameResult.myMoveMap(t.toString),
+              MyGameResult.resultMap(t.toString)
+            )
+        }
       }
-    }
 
   /** FS2 version / Finally Tagless version
     */
@@ -36,19 +37,21 @@ object IOService {
     Files[F]
       .readUtf8Lines(Path(fileSource))
 
-  def stringToGameMovesPipe[F[_]]: Pipe[F, String, (Move, Move, MyGameResult)] =
+  def stringToGameMovesPipe[F[_]]
+    : Pipe[F, String, (Move[OpponentMove], Move[MyMove], MyGameResult)] =
     inStream => {
       for {
-        gameMoves <- inStream.fold(List.empty[(Move, Move, MyGameResult)]) {
-          (s, v) =>
-            v.toCharArray match {
-              case Array(h, _, t) =>
-                (
-                  MyGameResult.opponentMoveMap(h.toString),
-                  MyGameResult.myMoveMap(t.toString),
-                  MyGameResult.resultMap(t.toString)
-                ) :: s
-            }
+        gameMoves <- inStream.fold(
+          List.empty[(Move[OpponentMove], Move[MyMove], MyGameResult)]
+        ) { (s, v) =>
+          v.toCharArray match {
+            case Array(h, _, t) =>
+              (
+                MyGameResult.opponentMoveMap(h.toString),
+                MyGameResult.myMoveMap(t.toString),
+                MyGameResult.resultMap(t.toString)
+              ) :: s
+          }
         }
         stream <- Stream.emits(gameMoves)
       } yield stream
@@ -62,7 +65,8 @@ object IOService {
 //        result = MyGameResult.playGame(oppMove, myMove)
 //      } yield MyGameResult.scoreGame(myMove, result)
 
-  def movesToScoreTotalPipe[F[_]]: Pipe[F, (Move, Move, MyGameResult), Int] =
+  def movesToScoreTotalPipe[F[_]]
+    : Pipe[F, (Move[OpponentMove], Move[MyMove], MyGameResult), Int] =
     inStream =>
       inStream.fold(0) { case (s, v) =>
         val (oppMove, myMove, _) = v
@@ -77,7 +81,7 @@ object IOService {
 //      } yield MyGameResult.scoreFixedGame(oppMove, result)
 
   def movesToRiggedScoreTotalPipe[F[_]]
-    : Pipe[F, (Move, Move, MyGameResult), Int] =
+    : Pipe[F, (Move[OpponentMove], Move[MyMove], MyGameResult), Int] =
     inStream =>
       inStream.fold(0) { case (s, v) =>
         val (oppMove, _, result) = v
